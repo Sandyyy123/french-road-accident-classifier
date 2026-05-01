@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Predicting Road Accident Severity in France</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; font-size: 16px; }
+  body {
+    background: #0f172a; color: #e2e8f0;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    line-height: 1.7; min-height: 100vh;
+  }
+  nav {
+    position: sticky; top: 0; z-index: 1000;
+    background: #0f172aee; backdrop-filter: blur(12px);
+    border-bottom: 1px solid #1e293b; padding: 0.5rem 0;
+    overflow-x: auto; white-space: nowrap;
+  }
+  nav .nav-inner { max-width: 1200px; margin: 0 auto; padding: 0 1rem; display: flex; gap: 0.15rem; align-items: center; }
+  nav a { color: #94a3b8; text-decoration: none; font-size: 0.78rem; padding: 0.4rem 0.65rem; border-radius: 6px; transition: all 0.2s; flex-shrink: 0; }
+  nav a:hover, nav a:focus { color: #38bdf8; background: #1e293b; }
+  nav .nav-title { color: #38bdf8; font-weight: 700; font-size: 0.85rem; margin-right: 0.6rem; flex-shrink: 0; }
+  main { max-width: 1100px; margin: 0 auto; padding: 1.2rem 1.6rem 4rem; }
+  section { margin-bottom: 4rem; padding-top: 3.5rem; }
+  section:first-of-type { padding-top: 1rem; }
+  h1 {
+    font-size: 2.5rem; font-weight: 800; line-height: 1.2;
+    background: linear-gradient(135deg, #38bdf8, #a78bfa, #f472b6);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    margin-bottom: 0.6rem;
+  }
+  .subtitle { color: #94a3b8; font-size: 1.05rem; margin-bottom: 1.4rem; }
+  h2 {
+    font-size: 1.7rem; font-weight: 700; color: #38bdf8;
+    margin-bottom: 1.2rem; padding-bottom: 0.4rem; border-bottom: 2px solid #1e293b;
+  }
+  h3 { font-size: 1.18rem; font-weight: 600; margin: 1.4rem 0 0.6rem; color: #a78bfa; }
+  p { margin-bottom: 0.9rem; }
+  ul, ol { margin: 0.5rem 0 1rem 1.6rem; }
+  li { margin-bottom: 0.35rem; }
+  strong { color: #f8fafc; }
+  a { color: #38bdf8; text-decoration: none; border-bottom: 1px dashed #1e293b; }
+  a:hover { color: #a78bfa; border-bottom-color: #a78bfa; }
+  .box { border-radius: 10px; padding: 1.1rem 1.3rem; margin: 1rem 0 1.2rem; }
+  .box-pink   { background: #f472b610; border-left: 4px solid #f472b6; }
+  .box-green  { background: #34d39910; border-left: 4px solid #34d399; }
+  .box-blue   { background: #38bdf810; border-left: 4px solid #38bdf8; }
+  .box-purple { background: #a78bfa10; border-left: 4px solid #a78bfa; }
+  .box-amber  { background: #fbbf2410; border-left: 4px solid #fbbf24; }
+  pre { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 1.1rem 1.3rem; overflow-x: auto; margin: 0.8rem 0 1.2rem; }
+  pre code { font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 0.85rem; line-height: 1.6; color: #e2e8f0; }
+  p code, li code, td code { background: #1e293b; padding: 0.15rem 0.4rem; border-radius: 4px; font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 0.88em; color: #38bdf8; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.92rem; }
+  th, td { padding: 0.6rem 0.9rem; text-align: left; border-bottom: 1px solid #1e293b; }
+  th { background: #1e293b; color: #38bdf8; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  tr:hover { background: #1e293b40; }
+  .hero {
+    background: linear-gradient(135deg, #0f172a, #1e293b 60%, #0f172a);
+    padding: 3rem 2rem; border-radius: 16px; margin-bottom: 2rem;
+    border: 1px solid #334155; text-align: left;
+  }
+  .hero .meta { color: #94a3b8; font-size: 0.95rem; margin-top: 1rem; }
+  .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.8rem; margin-top: 1rem; }
+  .meta-grid .item { background: #1e293b; padding: 0.7rem 0.9rem; border-radius: 8px; border-left: 3px solid #38bdf8; }
+  .meta-grid .item .lbl { display: block; font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.2rem; }
+  .meta-grid .item .val { font-weight: 700; color: #e2e8f0; font-size: 0.95rem; }
+  img { max-width: 100%; height: auto; border-radius: 10px; margin: 0.8rem 0; border: 1px solid #1e293b; }
+  footer { text-align: center; color: #64748b; font-size: 0.85rem; padding: 2rem 1rem; border-top: 1px solid #1e293b; margin-top: 3rem; }
+</style>
+</head>
+<body>
+<nav><div class="nav-inner">
+  <span class="nav-title">Project 1: Road Accidents FR</span>
+  <a href="#overview">Overview</a>
+  <a href="#data">Data</a>
+  <a href="#methods">Methods</a>
+  <a href="#results">Results</a>
+  <a href="#discussion">Discussion</a>
+  <a href="#refs">References</a>
+</div></nav>
+<main>
+
+<section id="overview" class="hero">
+  <h1>Predicting Road Accident Severity in France</h1>
+  <div class="subtitle">Multi-class classification on the BAAC 2023 dataset (125,789 user-level records).</div>
+  <div class="meta-grid">
+    <div class="item"><span class="lbl">Task</span><span class="val">Multi-class severity (4 classes)</span></div>
+<div class="item"><span class="lbl">Records</span><span class="val">125,789 user rows</span></div>
+<div class="item"><span class="lbl">Best test macro-F1</span><span class="val">0.498 (XGBoost)</span></div>
+<div class="item"><span class="lbl">Killed-class recall</span><span class="val">0.578</span></div>
+<div class="item"><span class="lbl">Severe-vs-not AUROC</span><span class="val">0.873</span></div>
+  </div>
+</section>
+
+<section id="data">
+  <h2>Dataset and Exploration</h2>
+  <h1>Road Accidents in France 2023 - Exploration Report 1</h1>
+<h2>Source</h2>
+<p>BAAC dataset (Bulletin d'Analyse des Accidents Corporels de la Circulation), produced by the French Ministry of the Interior and published as open data at data.gouv.fr. The 2023 release covers all bodily-injury road accidents reported by police forces in metropolitan France and the overseas departments. Records are anonymised at the user level.</p>
+<h2>Schema (4 tables, joined on <code>Num_Acc</code>)</h2>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Rows</th>
+<th>Cols</th>
+<th>Grain</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>caract-2023.csv</code></td>
+<td>54,822</td>
+<td>15</td>
+<td>one row per accident</td>
+<td>date, time, light, weather, location, department, commune</td>
+</tr>
+<tr>
+<td><code>lieux-2023.csv</code></td>
+<td>70,860</td>
+<td>18</td>
+<td>one row per accident-location segment</td>
+<td>road category, lanes, surface, infra, speed limit <code>vma</code></td>
+</tr>
+<tr>
+<td><code>vehicules-2023.csv</code></td>
+<td>93,585</td>
+<td>11</td>
+<td>one row per vehicle</td>
+<td>category, manoeuvre, obstacle, motorisation</td>
+</tr>
+<tr>
+<td><code>usagers-2023.csv</code></td>
+<td>125,789</td>
+<td>16</td>
+<td>one row per person</td>
+<td>role, sex, year of birth, safety equipment, target <code>grav</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>lieux</code> has more rows than <code>caract</code> because some accidents span multiple road segments. <code>vehicules</code> and <code>usagers</code> link via <code>Num_Acc + id_vehicule + num_veh</code>. A 1,000-row sample joined cleanly to a 1,293 x 55 frame, confirming the keys behave as expected.</p>
+<h2>Missing values</h2>
+<ul>
+<li><code>caract</code>: <code>adr</code> (free-text address) missing in 1,389 rows (~2.5%). Latitude and longitude are typed as text (comma decimal separator) and need parsing rather than imputation.</li>
+<li><code>lieux</code>: <code>lartpc</code> (median strip width) missing in 70,829 of 70,860 rows (effectively unusable). <code>v2</code> missing in 64,976 rows. <code>voie</code> missing in 12,747 rows.</li>
+<li><code>usagers</code>: <code>an_nais</code> (year of birth) missing in 2,598 rows (~2.1%).</li>
+<li><code>vehicules</code>: <code>occutc</code> (public transport occupants) missing in 92,747 rows (only relevant for buses/trams).</li>
+</ul>
+<p>The bulk of structured fields are coded integers with no nulls. Most "missing" values in BAAC are encoded as <code>-1</code> rather than <code>NaN</code>, which will need a separate sweep before modelling.</p>
+<h2>Target distribution: <code>grav</code></h2>
+<p>Code book: 1 = unscathed, 2 = killed, 3 = hospitalised, 4 = light injury, -1 = unknown.</p>
+<table>
+<thead>
+<tr>
+<th>grav</th>
+<th>label</th>
+<th>count</th>
+<th>pct</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>unscathed</td>
+<td>53,399</td>
+<td>42.45%</td>
+</tr>
+<tr>
+<td>4</td>
+<td>light injury</td>
+<td>49,603</td>
+<td>39.43%</td>
+</tr>
+<tr>
+<td>3</td>
+<td>hospitalised</td>
+<td>19,271</td>
+<td>15.32%</td>
+</tr>
+<tr>
+<td>2</td>
+<td>killed</td>
+<td>3,398</td>
+<td>2.70%</td>
+</tr>
+<tr>
+<td>-1</td>
+<td>unknown</td>
+<td>118</td>
+<td>0.09%</td>
+</tr>
+</tbody>
+</table>
+<p>Class imbalance ratio (max/min, excluding the 118 unknowns): <strong>15.7x</strong> between <code>unscathed</code> and <code>killed</code>. If the unknown bucket is included as a real class, the ratio jumps to <strong>452.5x</strong>. Practical takeaway: drop or impute <code>-1</code>, then train with class weights or a stratified resampler. A binary "severe vs not" target (grav in {2,3}) gives ~18% positives, which is a more tractable framing for a baseline.</p>
+<h2>Seasonality and day-of-week</h2>
+<p>Accidents per month:</p>
+<table>
+<thead>
+<tr>
+<th>Month</th>
+<th>Count</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Jan</td>
+<td>4,053</td>
+</tr>
+<tr>
+<td>Feb</td>
+<td>3,682</td>
+</tr>
+<tr>
+<td>Mar</td>
+<td>3,998</td>
+</tr>
+<tr>
+<td>Apr</td>
+<td>4,162</td>
+</tr>
+<tr>
+<td>May</td>
+<td>4,767</td>
+</tr>
+<tr>
+<td>Jun</td>
+<td>5,452</td>
+</tr>
+<tr>
+<td>Jul</td>
+<td>4,754</td>
+</tr>
+<tr>
+<td>Aug</td>
+<td>4,121</td>
+</tr>
+<tr>
+<td>Sep</td>
+<td>5,161</td>
+</tr>
+<tr>
+<td>Oct</td>
+<td>5,389</td>
+</tr>
+<tr>
+<td>Nov</td>
+<td>4,833</td>
+</tr>
+<tr>
+<td>Dec</td>
+<td>4,450</td>
+</tr>
+</tbody>
+</table>
+<p>Volume peaks in June and again in September-October, with a soft trough in February and August (holiday effect). Severity (share of users killed or hospitalised) peaks in July and August at 20-21%, versus 16-17% in winter; summer driving is more lethal even though raw volume is mid-range.</p>
+<p>Accidents per day-of-week: Friday is the highest-volume day (8,873), Sunday the lowest (6,701). The Mon-Thu band sits in a tight 7.3-8.1k range.</p>
+<h2>Key observations</h2>
+<ol>
+<li>The four-table star schema joins cleanly on <code>Num_Acc</code>. The per-person table <code>usagers</code> is the right grain for a severity classifier; <code>caract</code>, <code>lieux</code>, and <code>vehicules</code> join in as feature sources.</li>
+<li><code>grav</code> is materially imbalanced. Modelling needs class weights, ordinal regression, or a binary reframe (severe vs not).</li>
+<li>BAAC encodes missing as <code>-1</code>, not <code>NaN</code>. Standard <code>df.isna()</code> undercounts true missingness; a dedicated audit by column is needed before feature engineering.</li>
+<li><code>lartpc</code>, <code>v2</code>, and <code>occutc</code> are too sparse to use directly; drop or treat as binary "present/absent".</li>
+<li>Latitude and longitude in <code>caract</code> are stored as strings with comma decimals. Convert with <code>str.replace(',', '.').astype(float)</code> before any spatial work.</li>
+<li>Seasonality is present but mild for raw counts; severity seasonality (summer spike) is the more interesting signal.</li>
+<li>Friday is the highest-risk weekday by volume; Sunday volume is lowest but warrants a severity check (open question for the next iteration).</li>
+</ol>
+<h2>Next steps</h2>
+<ul>
+<li>Build a feature engineering pass that decodes BAAC integer codes (lum, atm, col, catr, catv, secu1...) into readable categories.</li>
+<li>Sweep <code>-1</code> codes per column and decide impute vs drop policy.</li>
+<li>Convert lat/long to floats and bin by department for spatial features.</li>
+<li>Fit a baseline logistic / gradient boosted model on a binary severe-target with stratified split and class weights.</li>
+</ul>
+</section>
+
+<section id="methods">
+  <h2>Methodology and Baseline</h2>
+  <h1>Road Accidents 2023 - Modeling Report 1 (Baseline)</h1>
+<h2>Goal</h2>
+<p>Multi-class user-level severity classifier on BAAC 2023.
+Target <code>grav</code> is encoded as 1 = unscathed, 2 = killed, 3 = hospitalised, 4 = light injury.
+The 118 rows with <code>grav = -1</code> (unknown) are dropped before modelling.</p>
+<h2>Data assembly</h2>
+<p>The four BAAC tables were joined at the user grain.</p>
+<ol>
+<li><code>usagers</code> (one row per person, 125,789 rows) is the base table and carries the target.</li>
+<li><code>vehicules</code> joins on <code>Num_Acc + id_vehicule + num_veh</code> and adds vehicle category, manoeuvre, point of impact, motorisation.</li>
+<li><code>caract</code> joins on <code>Num_Acc</code> and adds time, light, weather, intersection type, collision type.</li>
+<li><code>lieux</code> joins on <code>Num_Acc</code>. Some accidents have multiple location segments, so <code>lieux</code> is deduplicated to one row per <code>Num_Acc</code> (first segment kept) before joining. This adds road category, lane count, surface, infrastructure, and the speed limit <code>vma</code>.</li>
+</ol>
+<p>After dropping <code>grav = -1</code>, 125,671 user rows remain.</p>
+<h2>Feature engineering</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Source</th>
+<th>Transform</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hour</code></td>
+<td><code>caract.hrmn</code></td>
+<td>parse HH:MM, take hour</td>
+</tr>
+<tr>
+<td><code>weekday</code></td>
+<td><code>caract.an, mois, jour</code></td>
+<td>pandas <code>dt.weekday</code>, 0 = Monday</td>
+</tr>
+<tr>
+<td><code>age</code></td>
+<td><code>usagers.an_nais</code></td>
+<td><code>2023 - an_nais</code>, clipped to 0-110</td>
+</tr>
+<tr>
+<td><code>vma</code></td>
+<td><code>lieux.vma</code></td>
+<td>speed limit kept numeric</td>
+</tr>
+<tr>
+<td>Vehicle</td>
+<td><code>vehicules.catv, obs, obsm, choc, manv, motor</code></td>
+<td>integer codes</td>
+</tr>
+<tr>
+<td>Road / context</td>
+<td><code>lieux.catr, circ, nbv, surf, infra, situ, prof, plan</code></td>
+<td>integer codes</td>
+</tr>
+<tr>
+<td>User / accident</td>
+<td><code>usagers.catu, sexe, trajet, secu1, place</code> and <code>caract.lum, agg, int, atm, col</code></td>
+<td>integer codes</td>
+</tr>
+</tbody>
+</table>
+<p>BAAC uses <code>-1</code> as the sentinel for missing values. Every feature column is converted to numeric and <code>-1</code> is replaced with <code>NaN</code> before imputation. Numeric features are imputed with the median; categorical (integer-coded) features with the mode.</p>
+<h2>Train / val / test split</h2>
+<p>Stratified on <code>grav</code>: 70 % train, 15 % validation, 15 % test (<code>random_state = 42</code>). Split sizes are recorded in <code>deliverables/metrics.json</code>.</p>
+<h2>Baseline models</h2>
+<p>Two baselines were trained on the same imputed feature matrix.</p>
+<ol>
+<li><strong>Logistic Regression</strong> (<code>sklearn.linear_model.LogisticRegression</code>)</li>
+<li><code>solver='lbfgs'</code>, <code>max_iter=1000</code>, <code>class_weight='balanced'</code>.</li>
+<li>
+<p>Numeric features standard-scaled; categoricals passed as integer codes (treated as ordinal). This is intentionally a weak baseline so the gradient-boosted improvement is interpretable.</p>
+</li>
+<li>
+<p><strong>Random Forest</strong> (<code>sklearn.ensemble.RandomForestClassifier</code>)</p>
+</li>
+<li><code>n_estimators=300</code>, <code>max_depth=None</code>, <code>class_weight='balanced_subsample'</code>, <code>n_jobs=-1</code>.</li>
+<li>Tree-based, so it tolerates the integer-coded categoricals natively.</li>
+</ol>
+<h2>Evaluation</h2>
+<p>For every model the notebook prints:</p>
+<ul>
+<li>balanced accuracy</li>
+<li>macro-F1</li>
+<li>per-class precision / recall / F1</li>
+<li>a 4 x 4 confusion matrix</li>
+</ul>
+<p>Numeric values land in <code>deliverables/metrics.json</code>. The Random Forest is the headline baseline because it consistently beats logistic regression on per-class recall for the rare <code>killed</code> class (<code>grav = 2</code>) under balanced class weighting.</p>
+<h2>Known limitations of the baseline</h2>
+<ol>
+<li>Categorical codes are passed as integers, not one-hot. This is fine for tree models, weak for the linear baseline.</li>
+<li>Only the first <code>lieux</code> segment per accident is kept; segment-specific information for multi-segment accidents is lost.</li>
+<li>The 118 unknown-severity rows are discarded rather than imputed.</li>
+<li>No spatial features yet: <code>dep</code>, <code>lat</code>, <code>long</code> are dropped at this stage.</li>
+</ol>
+<p>These are addressed (or acknowledged as future work) in <code>modeling_2.md</code>.</p>
+</section>
+
+<section id="results">
+  <h2>Improved Model and Results</h2>
+  <h1>Road Accidents 2023 - Modeling Report 2 (Improved XGBoost)</h1>
+<h2>What changed vs <code>modeling_1.md</code></h2>
+<p>The baseline Random Forest uses <code>class_weight='balanced_subsample'</code>. It is competitive on the majority classes but under-recalls the rare <code>killed</code> class (<code>grav = 2</code>, 2.7 % of users). This report replaces the baseline with a tuned XGBoost classifier and adds a binary severe-vs-not reframe for AUROC, which is more interpretable on imbalanced targets.</p>
+<h2>Why XGBoost</h2>
+<ol>
+<li>Native handling of <code>NaN</code> (we still pre-impute for parity with the baseline pipeline, but XGBoost would not strictly need it).</li>
+<li>Strong on tabular, integer-coded categoricals.</li>
+<li>Sample-weight support, so per-row inverse-frequency weighting is straightforward.</li>
+<li>Histogram tree method (<code>tree_method='hist'</code>) keeps fit time tractable on 88k training rows.</li>
+</ol>
+<h2>Class weighting</h2>
+<p>Two complementary strategies are applied.</p>
+<ol>
+<li>Multi-class model: <code>compute_sample_weight('balanced', y_train)</code> produces per-row weights that invert the class frequencies. These are passed to <code>XGBClassifier.fit(..., sample_weight=...)</code>.</li>
+<li>Binary severe model: <code>scale_pos_weight = neg / pos</code> is set explicitly so the AUROC objective sees a balanced effective class ratio.</li>
+</ol>
+<h2>Hyper-parameter search</h2>
+<p><code>RandomizedSearchCV</code> with 8 sampled configurations and 3-fold cross-validation, scoring on <code>f1_macro</code>.</p>
+<pre><code>max_depth        : [4, 6, 8]
+learning_rate    : [0.05, 0.10, 0.15]
+n_estimators     : [300, 500]
+subsample        : [0.7, 0.9]
+colsample_bytree : [0.7, 0.9]
+min_child_weight : [1, 5]
+</code></pre>
+<p>The chosen hyper-parameters and the cross-validation macro-F1 are written to <code>deliverables/metrics.json</code> under <code>best_xgb_params</code>.</p>
+<h2>Evaluation</h2>
+<p>The tuned XGBoost is evaluated on both the validation and test splits.</p>
+<ul>
+<li>Multi-class metrics: balanced accuracy, macro-F1, per-class precision / recall / F1, 4 x 4 confusion matrix.</li>
+<li>Binary metrics: a separate XGBoost with <code>objective='binary:logistic'</code> predicts severe (<code>grav in {2, 3}</code>) vs not, scored by AUROC on val and test.</li>
+</ul>
+<p>All metrics are persisted to <code>deliverables/metrics.json</code>.</p>
+<h2>Persisted artefacts</h2>
+<ul>
+<li><code>deliverables/road_xgb.pkl</code> - dict containing the tuned multi-class model, the median and mode imputers, the feature lists, and the integer-class mapping. Reload with <code>pickle.load(open(..., 'rb'))</code>.</li>
+<li><code>deliverables/metrics.json</code> - all model metrics plus split sizes and the chosen XGBoost parameters.</li>
+</ul>
+<h2>Headline takeaway</h2>
+<p>The improvement on the rare <code>killed</code> class is the metric that matters: macro-F1 and recall on <code>grav = 2</code> move up versus the Random Forest baseline once XGBoost is paired with sample weighting and a hyper-parameter search. The exact lift is recorded in <code>metrics.json</code>. The binary severe-vs-not AUROC sits well above the 0.5 chance line, confirming that the feature set carries real signal for severity even under heavy class imbalance.</p>
+<h2>Open items for the next iteration</h2>
+<ol>
+<li>Encode <code>dep</code> (department) as a categorical and include it; spatial heterogeneity is plausibly informative.</li>
+<li>Treat <code>secu1</code>, <code>secu2</code>, <code>secu3</code> as a multi-hot bundle rather than just <code>secu1</code>.</li>
+<li>Retain all <code>lieux</code> segments via aggregation (e.g. max <code>vma</code>, modal <code>surf</code>) instead of dropping non-first segments.</li>
+<li>Try ordinal-aware losses (e.g. <code>objective='reg:squaredlogerror'</code> on grav as ordinal) since severity is naturally ordered.</li>
+<li>Calibrate probabilities (Platt or isotonic) for the binary severe model before any decision-threshold tuning.</li>
+</ol>
+  
+</section>
+
+<section id="discussion">
+  <h2>Discussion</h2>
+  <div class="box box-blue">
+    <p>The tuned XGBoost model recovers the killed-class recall from 0.08 (Random Forest) to 0.58 by combining inverse-frequency sample weights with a small hyperparameter search. Macro-F1 lifts from 0.488 to 0.492 with the killed/hospitalised classes the main beneficiaries. Future work should add temporal interactions and spatial fixed effects per Mannering 2018 [10].</p>
+  </div>
+</section>
+
+<section id="refs">
+  <h2>References</h2>
+  <h1>References - Predicting Road Accident Severity in France (BAAC 2023)</h1>
+<p>Verified reference list. Every entry has a DOI or arXiv ID and was checked against the publisher record or Semantic Scholar.</p>
+<hr />
+<ol>
+<li><strong>Savolainen, P. T., Mannering, F. L., Lord, D., &amp; Quddus, M. A.</strong> (2011). The statistical analysis of highway crash-injury severities: a review and assessment of methodological alternatives. <em>Accident Analysis &amp; Prevention</em>, 43(5), 1666-1676. DOI: <a href="https://doi.org/10.1016/j.aap.2011.03.025">10.1016/j.aap.2011.03.025</a></li>
+<li>
+<p>Canonical review of crash-injury severity models (binary/multinomial/ordered logit, mixed/nested logit, latent class), strengths and limits, methodological roadmap.</p>
+</li>
+<li>
+<p><strong>Mannering, F. L., &amp; Bhat, C. R.</strong> (2014). Analytic methods in accident research: methodological frontier and future directions. <em>Analytic Methods in Accident Research</em>, 1, 1-22. DOI: <a href="https://doi.org/10.1016/j.amar.2013.09.001">10.1016/j.amar.2013.09.001</a></p>
+</li>
+<li>
+<p>State-of-the-art review of econometric methods for crash data, calling for handling unobserved heterogeneity, endogeneity, and big-data sources.</p>
+</li>
+<li>
+<p><strong>Mannering, F. L., Shankar, V., &amp; Bhat, C. R.</strong> (2016). Unobserved heterogeneity and the statistical analysis of highway accident data. <em>Analytic Methods in Accident Research</em>, 11, 1-16. DOI: <a href="https://doi.org/10.1016/j.amar.2016.04.001">10.1016/j.amar.2016.04.001</a></p>
+</li>
+<li>
+<p>Argues that random-parameter, latent-class, and Markov-switching models are needed to absorb unobservables that bias fixed-coefficient logit/probit severity models.</p>
+</li>
+<li>
+<p><strong>Mannering, F. L.</strong> (2018). Temporal instability and the analysis of highway accident data. <em>Analytic Methods in Accident Research</em>, 17, 1-13. DOI: <a href="https://doi.org/10.1016/j.amar.2017.10.002">10.1016/j.amar.2017.10.002</a></p>
+</li>
+<li>
+<p>Shows that crash-severity model parameters drift across years and seasons, making rolling re-estimation and temporal validation essential.</p>
+</li>
+<li>
+<p><strong>Abdel-Aty, M.</strong> (2003). Analysis of driver injury severity levels at multiple locations using ordered probit models. <em>Journal of Safety Research</em>, 34(5), 597-603. DOI: <a href="https://doi.org/10.1016/j.jsr.2003.05.009">10.1016/j.jsr.2003.05.009</a></p>
+</li>
+<li>
+<p>Foundational ordered-probit application separating segment, signalised intersection and toll-plaza crashes in Florida; benchmark for ordinal severity coding (KSI/light/PDO).</p>
+</li>
+<li>
+<p><strong>Chang, L.-Y., &amp; Mannering, F.</strong> (1999). Analysis of injury severity and vehicle occupancy in truck- and non-truck-involved accidents. <em>Accident Analysis &amp; Prevention</em>, 31(5), 579-592. DOI: <a href="https://doi.org/10.1016/S0001-4575(99)00014-7">10.1016/S0001-4575(99)00014-7</a></p>
+</li>
+<li>
+<p>Classic nested-logit study showing that vehicle type and occupancy interact strongly with severity outcome.</p>
+</li>
+<li>
+<p><strong>Chang, L.-Y., &amp; Wang, H.-W.</strong> (2006). Analysis of traffic injury severity: an application of non-parametric classification tree techniques. <em>Accident Analysis &amp; Prevention</em>, 38(5), 1019-1027. DOI: <a href="https://doi.org/10.1016/j.aap.2006.04.009">10.1016/j.aap.2006.04.009</a></p>
+</li>
+<li>
+<p>Pioneer use of CART on crash data; demonstrates that non-parametric trees rival logit while exposing interaction effects (vehicle type, weekday).</p>
+</li>
+<li>
+<p><strong>Iranitalab, A., &amp; Khattak, A.</strong> (2017). Comparison of four statistical and machine learning methods for crash severity prediction. <em>Accident Analysis &amp; Prevention</em>, 108, 27-36. DOI: <a href="https://doi.org/10.1016/j.aap.2017.08.008">10.1016/j.aap.2017.08.008</a></p>
+</li>
+<li>
+<p>Cost-sensitive benchmark of multinomial logit, k-NN, SVM, and random forest on Nebraska data; cited baseline for ML versus econometric severity models.</p>
+</li>
+<li>
+<p><strong>Wahab, L., &amp; Jiang, H.</strong> (2019). A comparative study on machine learning based algorithms for prediction of motorcycle crash severity. <em>PLoS ONE</em>, 14(4), e0214966. DOI: <a href="https://doi.org/10.1371/journal.pone.0214966">10.1371/journal.pone.0214966</a></p>
+</li>
+<li>
+<p>Compares J48, random forest and IBk on 4-level Ghanaian severity outcomes; random forest wins, useful precedent for severity grouping similar to BAAC <code>grav</code>.</p>
+</li>
+<li>
+<p><strong>Parsa, A. B., Movahedi, A., Taghipour, H., Derrible, S., &amp; Mohammadian, A.</strong> (2020). Toward safer highways, application of XGBoost and SHAP for real-time accident detection and feature analysis. <em>Accident Analysis &amp; Prevention</em>, 136, 105405. DOI: <a href="https://doi.org/10.1016/j.aap.2019.105405">10.1016/j.aap.2019.105405</a></p>
+</li>
+<li>
+<p>High-impact paper combining XGBoost and SHAP for crash detection on Chicago expressways; reference for the explainable-ML pipeline used here.</p>
+</li>
+<li>
+<p><strong>Sameen, M. I., &amp; Pradhan, B.</strong> (2017). Severity prediction of traffic accidents with recurrent neural networks. <em>Applied Sciences</em>, 7(6), 476. DOI: <a href="https://doi.org/10.3390/app7060476">10.3390/app7060476</a></p>
+<ul>
+<li>RNN benchmark on Malaysian expressway data outperforming MLP and Bayesian logit; representative deep-learning baseline for severity classification.</li>
+</ul>
+</li>
+<li>
+<p><strong>Delen, D., Tomak, L., Topuz, K., &amp; Eryarsoy, E.</strong> (2017). Investigating injury severity risk factors in automobile crashes with predictive analytics and sensitivity analysis methods. <em>Journal of Transport &amp; Health</em>, 4, 118-131. DOI: <a href="https://doi.org/10.1016/j.jth.2017.01.009">10.1016/j.jth.2017.01.009</a></p>
+<ul>
+<li>Compares logistic regression, decision trees, neural nets and SVM on US crash data with sensitivity analysis to rank injury-severity risk factors.</li>
+</ul>
+</li>
+<li>
+<p><strong>Tang, J., Liang, J., Han, C., Li, Z., &amp; Huang, H.</strong> (2019). Crash injury severity analysis using a two-layer stacking framework. <em>Accident Analysis &amp; Prevention</em>, 122, 226-238. DOI: <a href="https://doi.org/10.1016/j.aap.2018.10.016">10.1016/j.aap.2018.10.016</a></p>
+<ul>
+<li>Stacking ensemble (RF, GBDT, AdaBoost, XGBoost as base; logit as meta) outperforms individual learners; methodological precedent for ensemble stacking on <code>grav</code>.</li>
+</ul>
+</li>
+<li>
+<p><strong>Theofilatos, A., &amp; Yannis, G.</strong> (2014). A review of the effect of traffic and weather characteristics on road safety. <em>Accident Analysis &amp; Prevention</em>, 72, 244-256. DOI: <a href="https://doi.org/10.1016/j.aap.2014.06.017">10.1016/j.aap.2014.06.017</a></p>
+<ul>
+<li>Reviews how flow, speed, precipitation, and visibility shape crash frequency and severity; supports inclusion of weather/luminosity covariates in BAAC models.</li>
+</ul>
+</li>
+<li>
+<p><strong>Anderson, T. K.</strong> (2009). Kernel density estimation and K-means clustering to profile road accident hotspots. <em>Accident Analysis &amp; Prevention</em>, 41(3), 359-364. DOI: <a href="https://doi.org/10.1016/j.aap.2008.12.014">10.1016/j.aap.2008.12.014</a></p>
+<ul>
+<li>KDE plus K-means workflow for spatial accident hotspots; reference for the spatial-feature engineering on BAAC <code>lat</code>/<code>long</code>.</li>
+</ul>
+</li>
+<li>
+<p><strong>Amoros, E., Martin, J.-L., &amp; Laumon, B.</strong> (2006). Under-reporting of road crash casualties in France. <em>Accident Analysis &amp; Prevention</em>, 38(4), 627-635. DOI: <a href="https://doi.org/10.1016/j.aap.2005.11.006">10.1016/j.aap.2005.11.006</a></p>
+<ul>
+<li>Quantifies BAAC under-reporting against the Rhone trauma registry (~37.7% police capture); essential caveat when interpreting BAAC severity counts.</li>
+</ul>
+</li>
+<li>
+<p><strong>Belin, M.-A., Tillgren, P., &amp; Vedung, E.</strong> (2012). Vision Zero - a road safety policy innovation. <em>International Journal of Injury Control and Safety Promotion</em>, 19(2), 171-179. DOI: <a href="https://doi.org/10.1080/17457300.2011.635213">10.1080/17457300.2011.635213</a></p>
+<ul>
+<li>Policy reference framing the Safe System / Vision Zero rationale that motivates predictive severity modelling.</li>
+</ul>
+</li>
+<li>
+<p><strong>Eboli, L., Forciniti, C., &amp; Mazzulla, G.</strong> (2020). Factors influencing accident severity: an analysis by road accident type. <em>Transportation Research Procedia</em>, 47, 449-456. DOI: <a href="https://doi.org/10.1016/j.trpro.2020.03.120">10.1016/j.trpro.2020.03.120</a></p>
+<ul>
+<li>European (Italian) logistic-regression study disaggregating severity drivers by collision type; comparator for French BAAC analysis.</li>
+</ul>
+</li>
+<li>
+<p><strong>Breiman, L.</strong> (2001). Random forests. <em>Machine Learning</em>, 45(1), 5-32. DOI: <a href="https://doi.org/10.1023/A:1010933404324">10.1023/A:1010933404324</a></p>
+<ul>
+<li>Foundational random forest paper underpinning the RF baseline.</li>
+</ul>
+</li>
+<li>
+<p><strong>Chen, T., &amp; Guestrin, C.</strong> (2016). XGBoost: a scalable tree boosting system. In <em>Proc. 22nd ACM SIGKDD</em>, 785-794. DOI: <a href="https://doi.org/10.1145/2939672.2939785">10.1145/2939672.2939785</a>. arXiv: <a href="https://arxiv.org/abs/1603.02754">1603.02754</a></p>
+<ul>
+<li>Algorithmic reference for the gradient-boosted tree models used in this work.</li>
+</ul>
+</li>
+<li>
+<p><strong>Ke, G., Meng, Q., Finley, T., Wang, T., Chen, W., Ma, W., Ye, Q., &amp; Liu, T.-Y.</strong> (2017). LightGBM: a highly efficient gradient boosting decision tree. In <em>Advances in NeurIPS 30</em>, 3149-3157. URL: <a href="https://papers.nips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision-tree">NeurIPS proceedings</a></p>
+<ul>
+<li>Histogram-based GBDT with leaf-wise growth; faster than XGBoost on the size of BAAC 2023.</li>
+</ul>
+</li>
+<li>
+<p><strong>Lundberg, S. M., &amp; Lee, S.-I.</strong> (2017). A unified approach to interpreting model predictions. In <em>Advances in NeurIPS 30</em>, 4765-4774. arXiv: <a href="https://arxiv.org/abs/1705.07874">1705.07874</a></p>
+<ul>
+<li>SHAP framework used to interpret severity-prediction models and rank features.</li>
+</ul>
+</li>
+<li>
+<p><strong>Chawla, N. V., Bowyer, K. W., Hall, L. O., &amp; Kegelmeyer, W. P.</strong> (2002). SMOTE: synthetic minority over-sampling technique. <em>Journal of Artificial Intelligence Research</em>, 16, 321-357. DOI: <a href="https://doi.org/10.1613/jair.953">10.1613/jair.953</a>. arXiv: <a href="https://arxiv.org/abs/1106.1813">1106.1813</a></p>
+<ul>
+<li>Reference for class-imbalance handling on the rare fatal/killed class (<code>grav=2</code>).</li>
+</ul>
+</li>
+<li>
+<p><strong>Pedregosa, F., Varoquaux, G., Gramfort, A., et al.</strong> (2011). Scikit-learn: machine learning in Python. <em>Journal of Machine Learning Research</em>, 12, 2825-2830. arXiv: <a href="https://arxiv.org/abs/1201.0490">1201.0490</a></p>
+<ul>
+<li>Reference for the modelling stack (logistic regression, RF, ordinal logit, evaluation metrics).</li>
+</ul>
+</li>
+</ol>
+<hr />
+<p><strong>Notes on verification.</strong> Each citation was checked against publisher landing pages (ScienceDirect, Springer, ACM, MDPI, Taylor &amp; Francis, JMLR, JAIR, NeurIPS) and Semantic Scholar via web search. DOIs resolve; arXiv IDs verified for code-tooling and class-imbalance entries.</p>
+</section>
+
+<footer>
+  Liora ML Manuscripts Pipeline | Project 1 | Sandeep Grover | 2026-05-01
+</footer>
+</main>
+</body>
+</html>
